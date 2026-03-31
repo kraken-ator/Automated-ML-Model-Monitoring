@@ -9,7 +9,6 @@ import warnings
 
 warnings.filterwarnings('ignore')
 
-# 1. Robust Path Setup
 script_dir = os.path.dirname(os.path.abspath(__file__))
 ref_data_path = os.path.join(script_dir, '..', 'data', 'reference', 'reference.csv')
 prod_batch_dir = os.path.join(script_dir, '..', 'data', 'production_batches')
@@ -22,7 +21,6 @@ reference_data = pd.read_csv(ref_data_path)
 model = joblib.load(model_path)
 expected_features = joblib.load(features_path)
 
-# Ensure reference data only contains the exact features the model was trained on
 ref_features = pd.get_dummies(reference_data.drop(['target', 'issue_d'], axis=1), drop_first=True)
 for col in expected_features:
     if col not in ref_features.columns:
@@ -45,26 +43,20 @@ for i in range(1, 31):
     
     current_data = pd.read_csv(batch_path)
     
-    # 2. Data Preparation
     current_data_features = pd.get_dummies(current_data.drop(['target', 'issue_d'], axis=1), drop_first=True)
     for col in expected_features:
         if col not in current_data_features.columns:
             current_data_features[col] = 0
     current_data_features = current_data_features[expected_features]
     
-    # 3. Model Performance
     predictions = model.predict(current_data_features)
     accuracy = accuracy_score(current_data['target'], predictions)
     
-    # 4. Manual Drift Calculation (Kolmogorov-Smirnov Test)
     drifted_features = 0
-    # We test the top 5 most important continuous features to save time
     numerical_cols = ['loan_amnt', 'int_rate', 'installment', 'annual_inc', 'dti']
     
     for col in numerical_cols:
-        # The KS test compares the distribution of the old data vs the new data
         stat, p_value = ks_2samp(reference_data[col], current_data[col])
-        # A p-value < 0.05 means the data has significantly drifted
         if p_value < 0.05:
             drifted_features += 1
             
@@ -72,7 +64,6 @@ for i in range(1, 31):
     dataset_size = len(current_data)
     action_req = "RETRAIN MODEL" if accuracy < 0.75 or drifted_features >= 3 else "ALL CLEAR"
     
-    # 5. Log Results
     cursor.execute('''
         INSERT INTO daily_drift_logs 
         (run_date, batch_name, dataset_size, overall_data_drift, drifted_features_count, model_accuracy, action_required)
