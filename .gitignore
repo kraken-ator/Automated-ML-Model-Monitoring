@@ -1,0 +1,12 @@
+# Ignore massive data files
+data/raw/*.csv
+data/reference/*.csv
+data/production_batches/*.csv
+
+# Ignore local database and logs
+logs/*.db
+
+# Python cache files
+__pycache__/
+*.pyc
+.DS_Store
