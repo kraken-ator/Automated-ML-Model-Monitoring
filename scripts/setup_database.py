@@ -1,10 +1,8 @@
 import sqlite3
 
-# Connect to the SQLite database (this creates the file if it doesn't exist)
 conn = sqlite3.connect('../logs/drift_metrics.db')
 cursor = conn.cursor()
 
-# Create the table schema for our daily monitoring logs
 cursor.execute('''
 CREATE TABLE IF NOT EXISTS daily_drift_logs (
     log_id INTEGER PRIMARY KEY AUTOINCREMENT,
